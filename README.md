@@ -118,7 +118,7 @@ python predict.py
 
 ## 👨‍💻 Author
 
-**Your Name**
+**Priyanka Bhagat**
 B.Tech TY CSE | Panel G
 ML Lab — Dr. Jayshree Aher
 AY 2025-26
