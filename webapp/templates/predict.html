@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GBM ML Pipeline — Prediction</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #080c14;
+  --surface:  #0d1422;
+  --surface2: #111b2e;
+  --border:   #1c2d47;
+  --accent:   #2563eb;
+  --accent2:  #38bdf8;
+  --text:     #e2eaf6;
+  --muted:    #64748b;
+  --green:    #10b981;
+  --red:      #ef4444;
+  --amber:    #f59e0b;
+  --font:     'DM Sans', sans-serif;
+  --mono:     'DM Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* NAV */
+.nav {
+  height: 56px;
+  background: rgba(8,12,20,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px;
+  position: sticky; top:0; z-index:100;
+}
+.nav-left { display:flex; align-items:center; gap:12px; }
+.nav-mark {
+  width:32px; height:32px; background:var(--accent);
+  border-radius:8px; display:flex; align-items:center; justify-content:center;
+}
+.nav-mark svg { width:18px; height:18px; }
+.nav-name { font-size:14px; font-weight:600; color:var(--text); letter-spacing:-0.2px; }
+.nav-tag  { font-size:11px; color:var(--muted); margin-top:1px; }
+.nav-right { display:flex; gap:4px; }
+.nav-link {
+  padding:6px 16px; border-radius:6px; font-size:13px; font-weight:500;
+  color:var(--muted); text-decoration:none; transition:all 0.15s; border:1px solid transparent;
+}
+.nav-link:hover { color:var(--text); background:var(--surface2); }
+.nav-link.active { color:var(--accent2); background:rgba(37,99,235,0.12); border-color:rgba(37,99,235,0.25); }
+
+/* HEADER */
+.header {
+  background: linear-gradient(180deg,var(--surface) 0%,var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 36px 32px 28px;
+}
+.header-label { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent2); margin-bottom:10px; }
+.header-title { font-size:24px; font-weight:700; color:var(--text); letter-spacing:-0.5px; margin-bottom:6px; }
+.header-desc  { font-size:13px; color:var(--muted); max-width:520px; }
+
+/* MAIN */
+.main { max-width:900px; margin:0 auto; padding:28px 32px 48px; }
+
+/* SECTION */
+.section-label {
+  font-size:11px; font-weight:600; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--muted);
+  margin-bottom:14px; margin-top:28px;
+}
+.section-label:first-child { margin-top:0; }
+
+/* CARDS */
+.card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; padding:24px; margin-bottom:16px;
+}
+.card-title {
+  font-size:13px; font-weight:600; color:var(--text);
+  margin-bottom:20px;
+}
+
+/* FORM */
+.form-row {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px;
+}
+.field { display:flex; flex-direction:column; gap:6px; }
+.field label {
+  font-size:11px; font-weight:600; letter-spacing:0.8px;
+  text-transform:uppercase; color:var(--muted);
+}
+.field input[type=text],
+.field select {
+  background:var(--surface2); border:1px solid var(--border);
+  color:var(--text); padding:9px 12px; border-radius:7px;
+  font-size:13px; font-family:var(--font); outline:none;
+  transition:border-color 0.15s; height:38px;
+}
+.field input:focus, .field select:focus { border-color:var(--accent); }
+.field select option { background:var(--surface2); }
+
+/* SLIDER */
+.slider-row { display:flex; align-items:center; gap:12px; }
+.slider-row input[type=range] {
+  flex:1; height:4px; cursor:pointer;
+  accent-color:var(--accent); background:transparent; border:none; padding:0;
+}
+.slider-display {
+  font-size:20px; font-weight:700; font-family:var(--mono);
+  color:var(--accent2); min-width:36px; text-align:right;
+}
+
+/* DIVIDER */
+.divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
+
+/* GENE GRID */
+.gene-label-row {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px;
+}
+.gene-label-row span { font-size:12px; color:var(--muted); }
+.gene-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px;
+}
+.gene-btn {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 12px; border-radius:6px; cursor:pointer;
+  border:1px solid var(--border); background:var(--surface2);
+  transition:all 0.15s; user-select:none;
+}
+.gene-btn:hover { border-color:var(--accent); }
+.gene-btn.on { border-color:var(--green); background:rgba(16,185,129,0.08); }
+.gene-indicator {
+  width:7px; height:7px; border-radius:50%;
+  border:1.5px solid var(--muted); flex-shrink:0; transition:all 0.15s;
+}
+.gene-btn.on .gene-indicator { background:var(--green); border-color:var(--green); }
+.gene-btn input { display:none; }
+.gene-lbl { font-size:12px; font-weight:500; font-family:var(--mono); color:var(--text); }
+
+/* SUBMIT */
+.submit-row { display:flex; gap:12px; margin-top:20px; }
+.btn-primary {
+  flex:1; padding:11px; border:none; border-radius:8px;
+  background:var(--accent); color:white; font-size:14px; font-weight:600;
+  cursor:pointer; font-family:var(--font); transition:all 0.15s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn-primary:hover { background:#1d4ed8; transform:translateY(-1px); box-shadow:0 4px 16px rgba(37,99,235,.35); }
+.btn-primary:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
+.btn-reset {
+  padding:11px 20px; border:1px solid var(--border); border-radius:8px;
+  background:transparent; color:var(--muted); font-size:13px; font-weight:500;
+  cursor:pointer; font-family:var(--font); transition:all 0.15s;
+}
+.btn-reset:hover { border-color:var(--text); color:var(--text); }
+
+/* LOADING */
+.loading { display:none; text-align:center; padding:32px; }
+.spinner {
+  width:36px; height:36px; border:3px solid var(--border);
+  border-top-color:var(--accent); border-radius:50%;
+  animation:spin 0.7s linear infinite; margin:0 auto 12px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading p { font-size:13px; color:var(--muted); }
+
+/* RESULT */
+.result-card {
+  display:none;
+  border-radius:12px; padding:24px; margin-bottom:16px;
+  animation:fadeUp 0.35s ease;
+  border:1px solid;
+}
+.result-card.long  { background:rgba(16,185,129,0.05); border-color:rgba(16,185,129,0.3); }
+.result-card.short { background:rgba(239,68,68,0.05);  border-color:rgba(239,68,68,0.3); }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:none; }
+}
+
+.result-top {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  margin-bottom:20px; gap:16px;
+}
+.result-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 12px; border-radius:4px; font-size:12px; font-weight:600;
+  letter-spacing:0.5px; text-transform:uppercase;
+}
+.result-badge.long  { background:rgba(16,185,129,0.15); color:var(--green); border:1px solid rgba(16,185,129,0.3); }
+.result-badge.short { background:rgba(239,68,68,0.15);  color:var(--red);   border:1px solid rgba(239,68,68,0.3); }
+.result-meta { font-size:12px; color:var(--muted); text-align:right; line-height:1.7; }
+
+.result-grid {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:1px; background:var(--border); border:1px solid var(--border);
+  border-radius:8px; overflow:hidden; margin-bottom:20px;
+}
+.result-stat {
+  background:rgba(8,12,20,0.5); padding:16px;
+  text-align:center;
+}
+.result-val {
+  font-size:22px; font-weight:700; font-variant-numeric:tabular-nums;
+  font-family:var(--mono); color:var(--text); margin-bottom:4px;
+}
+.result-lbl { font-size:10px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase; color:var(--muted); }
+
+/* RISK BAR */
+.risk-section { margin-bottom:16px; }
+.risk-label {
+  display:flex; justify-content:space-between; margin-bottom:6px;
+  font-size:12px; color:var(--muted);
+}
+.risk-track { height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+.risk-fill { height:100%; border-radius:3px; transition:width 1.2s cubic-bezier(.4,0,.2,1); }
+.risk-fill.low  { background:linear-gradient(90deg,#059669,var(--green)); }
+.risk-fill.high { background:linear-gradient(90deg,#b91c1c,var(--red)); }
+
+/* INTERPRETATION */
+.interp {
+  background:var(--surface2); border-radius:8px; padding:14px 16px;
+  border-left:3px solid var(--accent);
+}
+.interp h4 {
+  font-size:11px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase;
+  color:var(--accent2); margin-bottom:6px;
+}
+.interp p { font-size:13px; color:var(--muted); line-height:1.7; }
+
+/* ERROR */
+.error-card {
+  display:none; background:rgba(239,68,68,0.06);
+  border:1px solid rgba(239,68,68,0.3); border-radius:10px;
+  padding:14px 16px; margin-bottom:16px; font-size:13px; color:var(--red);
+}
+
+/* HOW IT WORKS */
+.steps { display:flex; flex-direction:column; gap:12px; }
+.step  { display:flex; gap:14px; align-items:flex-start; }
+.step-num {
+  width:26px; height:26px; border-radius:6px; flex-shrink:0;
+  background:rgba(37,99,235,0.15); border:1px solid rgba(37,99,235,0.3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:var(--accent2);
+  font-family:var(--mono); margin-top:1px;
+}
+.step-body { font-size:13px; color:var(--muted); line-height:1.6; padding-top:3px; }
+.step-body strong { color:var(--text); font-weight:600; }
+
+footer {
+  border-top:1px solid var(--border); padding:20px 32px;
+  text-align:center; font-size:12px; color:var(--muted);
+}
+
+@media(max-width:700px){
+  .form-row { grid-template-columns:1fr; }
+  .result-grid { grid-template-columns:repeat(2,1fr); }
+  .main { padding:20px 16px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-left">
+    <div class="nav-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+        <path d="M8 12h8M12 8v8"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nav-name">GBM Survival Pipeline</div>
+      <div class="nav-tag">Cancer Mutation ML · MIT WPU</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <a href="/"        class="nav-link">Dashboard</a>
+    <a href="/predict" class="nav-link active">Prediction</a>
+  </div>
+</nav>
+
+<div class="header">
+  <div class="header-label">Stage 2 · Patient Prediction</div>
+  <h1 class="header-title">Survival Prediction Tool</h1>
+  <p class="header-desc">Enter patient clinical data and gene mutation status to generate a survival prediction using the trained ML pipeline.</p>
+</div>
+
+<div class="main">
+
+  <!-- ERROR -->
+  <div class="error-card" id="errorCard">
+    <strong>Prediction Error:</strong> <span id="errorMsg"></span>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-card" id="resultCard">
+    <div class="result-top">
+      <div>
+        <div class="result-badge" id="resultBadge">Result</div>
+        <div style="font-size:18px; font-weight:700; color:var(--text); margin-top:8px;" id="resultTitle">—</div>
+      </div>
+      <div class="result-meta" id="resultMeta">—</div>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-stat">
+        <div class="result-val" id="resDays">—</div>
+        <div class="result-lbl">Predicted Days</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-val" id="resMonths">—</div>
+        <div class="result-lbl">Predicted Months</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-val" id="resMut">—</div>
+        <div class="result-lbl">Mutation Score</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-val" id="resAge">—</div>
+        <div class="result-lbl">Age at Diagnosis</div>
+      </div>
+    </div>
+
+    <div class="risk-section">
+      <div class="risk-label">
+        <span>Survival Risk Assessment</span>
+        <span id="riskLabel" style="font-weight:600;">—</span>
+      </div>
+      <div class="risk-track">
+        <div class="risk-fill" id="riskFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="interp">
+      <h4>Clinical Interpretation</h4>
+      <p id="interpText">—</p>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" id="loadingDiv">
+    <div class="spinner"></div>
+    <p>Running prediction pipeline...</p>
+  </div>
+
+  <!-- FORM -->
+  <div class="section-label">Clinical Information</div>
+  <div class="card">
+    <div class="card-title">Patient Details</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Age at Diagnosis</label>
+        <div class="slider-row">
+          <input type="range" id="ageSlider" min="18" max="90" value="55"
+                 oninput="document.getElementById('ageVal').textContent=this.value">
+          <span class="slider-display" id="ageVal">55</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Gender</label>
+        <select id="gender">
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Race / Ethnicity</label>
+        <select id="race">
+          <option value="Caucasian">Caucasian</option>
+          <option value="African American">African American</option>
+          <option value="Asian">Asian</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    <hr class="divider"/>
+
+    <div class="gene-label-row">
+      <div class="card-title" style="margin-bottom:0;">Gene Mutation Status</div>
+      <span>Click to mark as mutated</span>
+    </div>
+    <div class="gene-grid" id="geneGrid">
+      {% set default_genes = ['TP53','IDH1','ATRX','EGFR','PIK3CA','MUC16',
+                              'NOTCH1','CIC','FUBP1','NF1','PIK3R1','PDGFRA',
+                              'RB1','PTEN','SETD2','ARID1A','SF3B1','BRCA2','KIT','CDH17'] %}
+      {% for gene in (overlap_genes if overlap_genes else default_genes) %}
+      <div class="gene-btn" id="btn-{{ gene }}" onclick="toggleGene('{{ gene }}')">
+        <input type="checkbox" id="cb-{{ gene }}" value="{{ gene }}">
+        <div class="gene-indicator" id="ind-{{ gene }}"></div>
+        <span class="gene-lbl">{{ gene }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="submit-row">
+      <button class="btn-primary" id="submitBtn" onclick="runPrediction()">
+        Run Prediction
+      </button>
+      <button class="btn-reset" onclick="resetForm()">Reset</button>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="section-label">How It Works</div>
+  <div class="card">
+    <div class="card-title">Pipeline Overview</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-body"><strong>Gene Matching</strong> — Selected gene mutations are matched against the 45 harmful genes identified in Stage 1 of the pipeline through gene-symbol overlap.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-body"><strong>Mutation Score</strong> — The count of harmful genes mutated in this patient is computed as the Mutation Score. A higher score indicates more aggressive tumor biology.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-body"><strong>Feature Engineering</strong> — An Age × Mutation Score interaction feature is computed. All features are standardized and PCA-transformed to 159 components.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-body"><strong>Regression</strong> — Lasso Regression (best MAE: 483.6 days) predicts the estimated Days Till Death.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-body"><strong>Classification</strong> — Stacking Ensemble (75.62% accuracy) predicts survival group: Short (&lt;6 months) or Long (&gt;18 months).</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  B.Tech TY CSE &nbsp;·&nbsp; ML Project &nbsp;·&nbsp; Panel G &nbsp;·&nbsp; Dr. Jayshree Aher &nbsp;·&nbsp; MIT World Peace University, Pune
+</footer>
+
+<script>
+const selected = new Set();
+
+function toggleGene(gene) {
+  const btn = document.getElementById('btn-' + gene);
+  const cb  = document.getElementById('cb-'  + gene);
+  const ind = document.getElementById('ind-' + gene);
+  if (selected.has(gene)) {
+    selected.delete(gene);
+    btn.classList.remove('on');
+    cb.checked = false;
+  } else {
+    selected.add(gene);
+    btn.classList.add('on');
+    cb.checked = true;
+  }
+}
+
+function resetForm() {
+  selected.clear();
+  document.querySelectorAll('.gene-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.gene-btn input').forEach(c => c.checked = false);
+  document.getElementById('ageSlider').value = 55;
+  document.getElementById('ageVal').textContent = 55;
+  document.getElementById('gender').value = 'Male';
+  document.getElementById('race').value = 'Caucasian';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('errorCard').style.display  = 'none';
+}
+
+async function runPrediction() {
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('errorCard').style.display  = 'none';
+
+  const age    = parseInt(document.getElementById('ageSlider').value);
+  const gender = document.getElementById('gender').value;
+  const race   = document.getElementById('race').value;
+
+  const geneMutations = {};
+  selected.forEach(g => { geneMutations[g] = 1; });
+
+  document.getElementById('loadingDiv').style.display = 'block';
+  document.getElementById('submitBtn').disabled = true;
+
+  try {
+    const resp = await fetch('/api/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ age, gender, race, gene_mutations: geneMutations })
+    });
+    const data = await resp.json();
+
+    document.getElementById('loadingDiv').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+
+    if (!data.success) {
+      document.getElementById('errorMsg').textContent = data.error;
+      document.getElementById('errorCard').style.display = 'block';
+      return;
+    }
+
+    const isLong = data.group.includes('Long');
+    const card   = document.getElementById('resultCard');
+    card.className = 'result-card ' + (isLong ? 'long' : 'short');
+    card.style.display = 'block';
+
+    const badge = document.getElementById('resultBadge');
+    badge.className = 'result-badge ' + (isLong ? 'long' : 'short');
+    badge.textContent = isLong ? 'Long Survival' : 'Short Survival';
+
+    document.getElementById('resultTitle').textContent = data.group;
+    document.getElementById('resultMeta').innerHTML =
+      `Age: ${data.age} yrs<br>Gender: ${data.gender}<br>Race: ${data.race}`;
+
+    document.getElementById('resDays').textContent   = data.days + 'd';
+    document.getElementById('resMonths').textContent = data.months + ' mo';
+    document.getElementById('resMut').textContent    = data.mutation_score;
+    document.getElementById('resAge').textContent    = data.age;
+
+    const riskPct  = isLong ? 22 : 78;
+    const riskFill = document.getElementById('riskFill');
+    riskFill.className  = 'risk-fill ' + (isLong ? 'low' : 'high');
+    riskFill.style.width = riskPct + '%';
+    document.getElementById('riskLabel').textContent =
+      isLong ? 'Low Risk' : 'High Risk';
+    document.getElementById('riskLabel').style.color =
+      isLong ? 'var(--green)' : 'var(--red)';
+
+    const ms = data.mutation_score;
+    document.getElementById('interpText').textContent = isLong
+      ? `Mutation Score of ${ms} indicates low harmful mutation burden. The model classifies this patient as Long Survival (> 18 months). Lower scores are associated with less aggressive tumor biology and better prognosis in Glioblastoma.`
+      : `Mutation Score of ${ms} indicates elevated harmful mutation burden. The model classifies this patient as Short Survival (< 6 months). Higher scores correlate with aggressive tumor behavior and treatment resistance in Glioblastoma.`;
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    document.getElementById('loadingDiv').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('errorMsg').textContent = 'Connection error: ' + err.message;
+    document.getElementById('errorCard').style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>

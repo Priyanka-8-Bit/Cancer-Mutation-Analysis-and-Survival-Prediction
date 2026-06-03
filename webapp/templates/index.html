@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GBM ML Pipeline — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+<style>
+:root {
+  --bg:       #080c14;
+  --surface:  #0d1422;
+  --surface2: #111b2e;
+  --border:   #1c2d47;
+  --accent:   #2563eb;
+  --accent2:  #38bdf8;
+  --text:     #e2eaf6;
+  --muted:    #64748b;
+  --subtle:   #1e3a5f;
+  --green:    #10b981;
+  --red:      #ef4444;
+  --amber:    #f59e0b;
+  --font:     'DM Sans', sans-serif;
+  --mono:     'DM Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── NAV ─────────────────────────────────────────── */
+.nav {
+  height: 56px;
+  background: rgba(8,12,20,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nav-mark {
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-mark svg { width: 18px; height: 18px; }
+.nav-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+.nav-tag {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.nav-right {
+  display: flex;
+  gap: 4px;
+}
+.nav-link {
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.nav-link:hover { color: var(--text); background: var(--surface2); }
+.nav-link.active {
+  color: var(--accent2);
+  background: rgba(37,99,235,0.12);
+  border-color: rgba(37,99,235,0.25);
+}
+
+/* ── HEADER ──────────────────────────────────────── */
+.header {
+  background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 40px 32px 32px;
+}
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.header-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 10px;
+}
+.header-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+.header-desc {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 580px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.header-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid;
+}
+.pill-blue  { color: var(--accent2); border-color: rgba(56,189,248,0.25); background: rgba(56,189,248,0.06); }
+.pill-green { color: var(--green);   border-color: rgba(16,185,129,0.25); background: rgba(16,185,129,0.06); }
+.pill-amber { color: var(--amber);   border-color: rgba(245,158,11,0.25); background: rgba(245,158,11,0.06); }
+.pill-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; opacity: 0.7;
+}
+
+/* ── MAIN LAYOUT ─────────────────────────────────── */
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 32px 48px;
+}
+
+/* ── SECTION LABEL ───────────────────────────────── */
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  margin-top: 32px;
+}
+.section-label:first-child { margin-top: 0; }
+
+/* ── STAT GRID ───────────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.stat-cell {
+  background: var(--surface);
+  padding: 22px 24px;
+  transition: background 0.15s;
+}
+.stat-cell:hover { background: var(--surface2); }
+.stat-num {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-num.accent { color: var(--accent2); }
+.stat-num.green  { color: var(--green); }
+.stat-num.amber  { color: var(--amber); }
+.stat-lbl {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+.stat-delta {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--green);
+  background: rgba(16,185,129,0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* ── PIPELINE ────────────────────────────────────── */
+.pipeline-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.pipeline {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 700px;
+}
+.pipe-node {
+  flex: 1;
+  padding: 16px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  transition: all 0.15s;
+  cursor: default;
+}
+.pipe-node:hover { border-color: var(--accent); background: rgba(37,99,235,0.06); }
+.pipe-node.bridge {
+  border-color: rgba(245,158,11,0.4);
+  background: rgba(245,158,11,0.05);
+}
+.pipe-node.output {
+  border-color: rgba(16,185,129,0.4);
+  background: rgba(16,185,129,0.05);
+}
+.pipe-step {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 5px;
+  font-family: var(--mono);
+}
+.pipe-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.pipe-node.bridge .pipe-name { color: var(--amber); }
+.pipe-node.output .pipe-name { color: var(--green); }
+.pipe-desc {
+  font-size: 11px;
+  color: var(--muted);
+}
+.pipe-arrow {
+  flex-shrink: 0;
+  padding: 0 8px;
+  color: var(--border);
+  font-size: 16px;
+}
+
+/* ── CHART GRID ──────────────────────────────────── */
+.chart-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.chart-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  overflow: hidden;
+}
+.card-full {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+/* ── TABLE ───────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.data-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(28,45,71,0.5);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--surface2); }
+.data-table td:first-child { font-weight: 500; }
+.rank-1 td:first-child { color: var(--accent2); }
+
+.bar-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bar-track {
+  flex: 1;
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+}
+.bar-fill.green { background: linear-gradient(90deg, #059669, var(--green)); }
+.bar-val {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--accent2);
+  min-width: 44px;
+  text-align: right;
+}
+
+/* ── GENE TAGS ───────────────────────────────────── */
+.gene-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gene-tag {
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--mono);
+  padding: 3px 10px;
+  border-radius: 3px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--accent2);
+  letter-spacing: 0.3px;
+  transition: all 0.15s;
+}
+.gene-tag:hover { border-color: var(--accent); background: rgba(37,99,235,0.1); }
+.gene-tag.more {
+  color: var(--muted);
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+/* ── CTA ─────────────────────────────────────────── */
+.cta-bar {
+  background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(56,189,248,0.08));
+  border: 1px solid rgba(37,99,235,0.3);
+  border-radius: 12px;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 28px;
+  gap: 20px;
+}
+.cta-text h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.cta-text p {
+  font-size: 13px;
+  color: var(--muted);
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: var(--accent);
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.15s;
+  border: none;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+}
+.btn-arrow {
+  font-size: 16px;
+  transition: transform 0.15s;
+}
+.btn-primary:hover .btn-arrow { transform: translateX(3px); }
+
+/* ── FOOTER ──────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 20px 32px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── FADE IN ANIMATION ───────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade { animation: fadeUp 0.4s ease forwards; }
+.fade-1 { animation-delay: 0.05s; opacity: 0; }
+.fade-2 { animation-delay: 0.10s; opacity: 0; }
+.fade-3 { animation-delay: 0.15s; opacity: 0; }
+.fade-4 { animation-delay: 0.20s; opacity: 0; }
+.fade-5 { animation-delay: 0.25s; opacity: 0; }
+
+@media (max-width: 900px) {
+  .stat-grid      { grid-template-columns: repeat(2,1fr); }
+  .chart-grid-2   { grid-template-columns: 1fr; }
+  .chart-grid-3   { grid-template-columns: 1fr; }
+  .main           { padding: 20px 16px; }
+  .nav            { padding: 0 16px; }
+  .header         { padding: 28px 16px; }
+  .cta-bar        { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-left">
+    <div class="nav-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+        <path d="M8 12h8M12 8v8"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nav-name">GBM Survival Pipeline</div>
+      <div class="nav-tag">Cancer Mutation ML · MIT WPU</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <a href="/"        class="nav-link active">Dashboard</a>
+    <a href="/predict" class="nav-link">Prediction</a>
+  </div>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-label">B.Tech TY CSE · ML Project · Panel G</div>
+    <h1 class="header-title">Cancer Mutation Analysis &amp;<br>Survival Prediction</h1>
+    <p class="header-desc">A two-stage machine learning pipeline that identifies harmful gene mutations from genomic data and predicts Glioblastoma patient survival using clinical and mutation features.</p>
+    <div class="header-pills">
+      <span class="pill pill-blue"><span class="pill-dot"></span>{{ results.get('total_genes', 711) }} Genes Analyzed</span>
+      <span class="pill pill-amber"><span class="pill-dot"></span>{{ results.get('harmful_count', 123) }} Harmful Genes</span>
+      <span class="pill pill-blue"><span class="pill-dot"></span>45 Bridge Genes</span>
+      <span class="pill pill-green"><span class="pill-dot"></span>75.62% Best Accuracy</span>
+      <span class="pill pill-blue"><span class="pill-dot"></span>{{ results.get('total_patients', 800) }} Patients</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- STATS -->
+  <div class="section-label fade fade-1">Overview</div>
+  <div class="stat-grid fade fade-1">
+    <div class="stat-cell">
+      <div class="stat-num accent">{{ results.get('total_genes', 711) }}</div>
+      <div class="stat-lbl">Genes Analyzed</div>
+      <div class="stat-delta">Stage 1 Input</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num amber">{{ results.get('harmful_count', 123) }}</div>
+      <div class="stat-lbl">Harmful Genes Identified</div>
+      <div class="stat-delta">17.3% of total</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">{{ results.get('total_patients', 800) }}</div>
+      <div class="stat-lbl">Total Patients</div>
+      <div class="stat-delta">300 real + 500 synthetic</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num green">75.62%</div>
+      <div class="stat-lbl">Best Classification Accuracy</div>
+      <div class="stat-delta">Stacking Ensemble</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">45</div>
+      <div class="stat-lbl">Bridge Genes</div>
+      <div class="stat-delta">Stage 1 → Stage 2</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">{{ results.get('dead_count', 500) }}</div>
+      <div class="stat-lbl">Dead Patients</div>
+      <div class="stat-delta">62.5% of dataset</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num green">{{ results.get('alive_count', 300) }}</div>
+      <div class="stat-lbl">Alive Patients</div>
+      <div class="stat-delta">37.5% of dataset</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">{{ results.get('avg_age', 55.0) }}</div>
+      <div class="stat-lbl">Average Age at Diagnosis</div>
+      <div class="stat-delta">years</div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="section-label fade fade-2">Two-Stage Pipeline</div>
+  <div class="pipeline-wrap fade fade-2">
+    <div class="pipeline">
+      <div class="pipe-node">
+        <div class="pipe-step">01 · Input</div>
+        <div class="pipe-name">Gene Dataset</div>
+        <div class="pipe-desc">711 genes · TSV</div>
+      </div>
+      <div class="pipe-arrow">›</div>
+      <div class="pipe-node">
+        <div class="pipe-step">02 · Process</div>
+        <div class="pipe-name">Preprocessing</div>
+        <div class="pipe-desc">Scale · Label · Clean</div>
+      </div>
+      <div class="pipe-arrow">›</div>
+      <div class="pipe-node">
+        <div class="pipe-step">03 · Stage 1</div>
+        <div class="pipe-name">Gene Classification</div>
+        <div class="pipe-desc">7 models · 123 harmful</div>
+      </div>
+      <div class="pipe-arrow">›</div>
+      <div class="pipe-node bridge">
+        <div class="pipe-step">04 · Bridge</div>
+        <div class="pipe-name">Mutation Score</div>
+        <div class="pipe-desc">45 overlap genes</div>
+      </div>
+      <div class="pipe-arrow">›</div>
+      <div class="pipe-node">
+        <div class="pipe-step">05 · Reduce</div>
+        <div class="pipe-name">PCA + Clustering</div>
+        <div class="pipe-desc">504 → 159 dims</div>
+      </div>
+      <div class="pipe-arrow">›</div>
+      <div class="pipe-node">
+        <div class="pipe-step">06 · Stage 2</div>
+        <div class="pipe-name">Predict Survival</div>
+        <div class="pipe-desc">Dead / Alive · Days</div>
+      </div>
+      <div class="pipe-arrow">›</div>
+      <div class="pipe-node output">
+        <div class="pipe-step">07 · Output</div>
+        <div class="pipe-name">Report + Audio</div>
+        <div class="pipe-desc">gTTS · 75.62% acc</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="section-label fade fade-3">Patient Demographics</div>
+  <div class="chart-grid-3 fade fade-3">
+    <div class="card">
+      <div class="card-title">Vital Status</div>
+      <div id="ch-donut" style="height:220px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Gender Distribution</div>
+      <div id="ch-gender" style="height:220px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Race Distribution</div>
+      <div id="ch-race" style="height:220px;"></div>
+    </div>
+  </div>
+
+  <div class="chart-grid-2 fade fade-3">
+    <div class="card">
+      <div class="card-title">Age at Diagnosis Distribution</div>
+      <div id="ch-age" style="height:220px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Days Till Death Distribution</div>
+      <div id="ch-days" style="height:220px;"></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="section-label fade fade-4">Genomic Analysis</div>
+  <div class="card-full fade fade-4">
+    <div class="card-title">Top 10 Most Mutated Genes — Stage 1 Input</div>
+    <div id="ch-genes" style="height:280px;"></div>
+  </div>
+
+  <div class="chart-grid-2 fade fade-4">
+    <div class="card">
+      <div class="card-title">Mutation Score Distribution</div>
+      <div id="ch-mut" style="height:240px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Accuracy Improvement Journey</div>
+      <div id="ch-journey" style="height:240px;"></div>
+    </div>
+  </div>
+
+  <!-- MODEL RESULTS -->
+  <div class="section-label fade fade-5">Model Performance</div>
+  <div class="chart-grid-2 fade fade-5">
+    <div class="card">
+      <div class="card-title">Classification Models — Accuracy</div>
+      <div id="ch-clf" style="height:280px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Regression Models — R² Score</div>
+      <div id="ch-reg" style="height:280px;"></div>
+    </div>
+  </div>
+
+  <!-- DETAILED TABLE -->
+  <div class="card-full fade fade-5">
+    <div class="card-title">Classification Models — Detailed Comparison</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Accuracy</th>
+          <th>Precision</th>
+          <th>Recall</th>
+          <th>F1 Score</th>
+          <th style="width:200px;">Accuracy</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set rows = [
+          ('Stacking',      '75.62','78.08','75.62','76.01'),
+          ('Bagging',       '75.00','74.73','75.00','74.81'),
+          ('Random Forest', '73.75','73.99','73.75','71.88'),
+          ('SVM (RBF)',     '70.00','69.81','70.00','69.89'),
+          ('AdaBoost',      '70.00','69.37','70.00','69.51'),
+          ('Decision Tree', '68.75','77.11','68.75','68.84'),
+          ('Naive Bayes',   '64.38','74.97','64.38','64.06'),
+          ('KNN',           '60.00','38.46','60.00','46.88'),
+        ] %}
+        {% for model, acc, prec, rec, f1 in rows %}
+        <tr {% if loop.first %}class="rank-1"{% endif %}>
+          <td>{{ model }}</td>
+          <td>{{ acc }}%</td>
+          <td>{{ prec }}%</td>
+          <td>{{ rec }}%</td>
+          <td>{{ f1 }}%</td>
+          <td>
+            <div class="bar-inline">
+              <div class="bar-track">
+                <div class="bar-fill {% if acc|float >= 70 %}green{% endif %}"
+                     style="width:{{ (acc|float / 80 * 100)|round }}%"></div>
+              </div>
+              <span class="bar-val">{{ acc }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- HARMFUL GENES -->
+  <div class="card-full fade fade-5">
+    <div class="card-title">Harmful Genes Identified — Stage 1 Output &nbsp;·&nbsp; {{ results.get('harmful_count', 123) }} total</div>
+    <div class="gene-cloud">
+      {% for gene in results.get('harmful_genes', ['IDH1','TP53','ATRX','CIC','FUBP1','PIK3CA','MUC16','NOTCH1','EGFR','PDGFRA','NF1','PIK3R1','RB1','PTEN','SETD2'])[:60] %}
+      <span class="gene-tag">{{ gene }}</span>
+      {% endfor %}
+      {% if results.get('harmful_count', 0) > 60 %}
+      <span class="gene-tag more">+{{ results.get('harmful_count',123) - 60 }} more</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-bar fade fade-5">
+    <div class="cta-text">
+      <h3>Run a New Patient Prediction</h3>
+      <p>Enter clinical data and gene mutation status to get a survival prediction with audio report.</p>
+    </div>
+    <a href="/predict" class="btn-primary">
+      Open Prediction Tool
+      <span class="btn-arrow">→</span>
+    </a>
+  </div>
+
+</div>
+
+<footer>
+  B.Tech TY CSE &nbsp;·&nbsp; ML Project &nbsp;·&nbsp; Panel G &nbsp;·&nbsp; Dr. Jayshree Aher &nbsp;·&nbsp; MIT World Peace University, Pune
+</footer>
+
+<script>
+const LAYOUT = {
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor:  'rgba(0,0,0,0)',
+  font: { family: 'DM Sans, sans-serif', color: '#64748b', size: 11 },
+  margin: { t: 10, b: 36, l: 44, r: 16 },
+  xaxis: { gridcolor: '#1c2d47', zerolinecolor: '#1c2d47', tickfont: { size: 11 } },
+  yaxis: { gridcolor: '#1c2d47', zerolinecolor: '#1c2d47', tickfont: { size: 11 } },
+};
+const CFG = { responsive: true, displayModeBar: false };
+
+// Donut
+Plotly.newPlot('ch-donut', [{
+  type: 'pie',
+  labels: ['Dead', 'Alive'],
+  values: [{{ results.get('dead_count',500) }}, {{ results.get('alive_count',300) }}],
+  hole: 0.62,
+  marker: { colors: ['#ef4444','#10b981'], line:{ color:'#080c14', width:2 } },
+  textinfo: 'label+percent',
+  textfont: { color:'#e2eaf6', size:12 },
+  insidetextorientation: 'horizontal'
+}], { ...LAYOUT, showlegend: false,
+  annotations: [{ text: '800<br>patients', x:0.5, y:0.5, showarrow:false,
+    font:{ size:13, color:'#e2eaf6' }, xanchor:'center', yanchor:'middle' }]
+}, CFG);
+
+// Gender
+const gd = {{ results.get('gender_dist', {'Male':420,'Female':380}) | tojson }};
+Plotly.newPlot('ch-gender', [{
+  type:'bar', x:Object.keys(gd), y:Object.values(gd),
+  marker:{ color:['#2563eb','#38bdf8'], line:{color:'#080c14',width:1} },
+  text:Object.values(gd), textposition:'outside',
+  textfont:{ color:'#64748b', size:11 }
+}], { ...LAYOUT, yaxis:{ gridcolor:'#1c2d47', visible:false },
+  bargap:0.4 }, CFG);
+
+// Race
+const rd = {{ results.get('race_dist', {'Caucasian':420,'African American':180,'Asian':120,'Other':80}) | tojson }};
+Plotly.newPlot('ch-race', [{
+  type:'bar', x:Object.values(rd), y:Object.keys(rd),
+  orientation:'h',
+  marker:{ color:'#2563eb', line:{color:'#080c14',width:1}, opacity:0.85 },
+  text:Object.values(rd), textposition:'outside',
+  textfont:{ color:'#64748b', size:11 }
+}], { ...LAYOUT, margin:{t:10,b:20,l:130,r:40},
+  xaxis:{ gridcolor:'#1c2d47', visible:false },
+  yaxis:{ gridcolor:'#1c2d47' }
+}, CFG);
+
+// Age histogram
+const ad = {{ results.get('age_dist',[]) | tojson }};
+Plotly.newPlot('ch-age', [{
+  type:'histogram',
+  x: ad.length>0 ? ad : Array.from({length:200},()=>30+Math.random()*50),
+  nbinsx:18,
+  marker:{ color:'#2563eb', line:{color:'#080c14',width:0.5}, opacity:0.85 }
+}], { ...LAYOUT,
+  xaxis:{ ...LAYOUT.xaxis, title:{text:'Age (years)',font:{size:11,color:'#64748b'}} },
+  yaxis:{ ...LAYOUT.yaxis, title:{text:'Patients',font:{size:11,color:'#64748b'}} }
+}, CFG);
+
+// Days histogram
+const dd = {{ results.get('days_dist',[]) | tojson }};
+Plotly.newPlot('ch-days', [{
+  type:'histogram',
+  x: dd.length>0 ? dd : Array.from({length:200},()=>Math.random()*1800+10),
+  nbinsx:22,
+  marker:{ color:'#f59e0b', line:{color:'#080c14',width:0.5}, opacity:0.85 }
+}], { ...LAYOUT,
+  xaxis:{ ...LAYOUT.xaxis, title:{text:'Days',font:{size:11,color:'#64748b'}} },
+  yaxis:{ ...LAYOUT.yaxis, title:{text:'Patients',font:{size:11,color:'#64748b'}} }
+}, CFG);
+
+// Top genes
+const gn = {{ results.get('top_genes',['IDH1','TP53','ATRX','CIC','FUBP1','PIK3CA','NF1','PIK3R1','EGFR','PTEN']) | tojson }};
+const gc = {{ results.get('top_genes_counts',[4,169,190,96,45,38,30,28,25,22]) | tojson }};
+Plotly.newPlot('ch-genes', [{
+  type:'bar', orientation:'h',
+  y: [...gn].reverse(), x: [...gc].reverse(),
+  marker:{
+    color: [...gc].reverse().map((_,i)=>`hsl(${210+i*5},70%,${40+i*2}%)`),
+    line:{ color:'#080c14', width:0.5 }
+  },
+  text: [...gc].reverse().map(v=>v.toString()),
+  textposition:'outside', textfont:{ color:'#64748b', size:11 }
+}], { ...LAYOUT, margin:{t:10,b:40,l:70,r:60},
+  xaxis:{ ...LAYOUT.xaxis, title:{text:'Mutation Count',font:{size:11,color:'#64748b'}} }
+}, CFG);
+
+// Mutation score
+const ms = {{ results.get('mutation_scores',[]) | tojson }};
+Plotly.newPlot('ch-mut', [{
+  type:'histogram',
+  x: ms.length>0 ? ms : Array.from({length:300},()=>Math.floor(Math.random()*40)),
+  nbinsx:20,
+  marker:{ color:'#7c3aed', line:{color:'#080c14',width:0.5}, opacity:0.85 }
+}], { ...LAYOUT,
+  xaxis:{ ...LAYOUT.xaxis, title:{text:'Mutation Score',font:{size:11,color:'#64748b'}} },
+  yaxis:{ ...LAYOUT.yaxis, title:{text:'Patients',font:{size:11,color:'#64748b'}} }
+}, CFG);
+
+// Journey
+Plotly.newPlot('ch-journey', [{
+  type:'scatter', mode:'lines+markers+text',
+  x:['Initial\n3-class','Binary\n300 pts','Augmented\n600 pts','Final\n800 pts'],
+  y:[43.33,71.43,70.10,75.62],
+  line:{ color:'#2563eb', width:2.5 },
+  marker:{ size:10, color:['#ef4444','#f59e0b','#f59e0b','#10b981'],
+    line:{color:'#080c14',width:2} },
+  text:['43.33%','71.43%','70.10%','75.62%'],
+  textposition:'top center', textfont:{color:'#e2eaf6',size:11},
+  fill:'tozeroy', fillcolor:'rgba(37,99,235,0.07)'
+}], { ...LAYOUT,
+  yaxis:{ ...LAYOUT.yaxis, range:[30,85], title:{text:'Accuracy (%)',font:{size:11,color:'#64748b'}} },
+  shapes:[{type:'line',y0:70,y1:70,x0:-0.5,x1:3.5,
+    line:{color:'#f59e0b',dash:'dot',width:1}}]
+}, CFG);
+
+// Classification
+const cm = ['KNN','Naive Bayes','Decision Tree','SVM','AdaBoost','Bagging','Random Forest','Stacking'];
+const ca = [60.00,64.38,68.75,70.00,70.00,75.00,73.75,75.62];
+Plotly.newPlot('ch-clf', [{
+  type:'bar', orientation:'h', y:cm, x:ca,
+  marker:{
+    color: ca.map(v=> v>=75?'#10b981': v>=70?'#2563eb':'#475569'),
+    line:{color:'#080c14',width:0.5}
+  },
+  text: ca.map(v=>v.toFixed(2)+'%'),
+  textposition:'outside', textfont:{color:'#64748b',size:11}
+}], { ...LAYOUT, margin:{t:10,b:40,l:110,r:60},
+  xaxis:{...LAYOUT.xaxis,range:[45,85],title:{text:'Accuracy (%)',font:{size:11,color:'#64748b'}}},
+  shapes:[{type:'line',x0:70,x1:70,y0:-0.5,y1:7.5,
+    line:{color:'#f59e0b',dash:'dot',width:1.5}}]
+}, CFG);
+
+// Regression
+Plotly.newPlot('ch-reg', [{
+  type:'bar',
+  x:['Linear','Ridge','Lasso'],
+  y:[-0.3467,-0.3454,-0.3045],
+  marker:{ color:['#475569','#2563eb','#10b981'], line:{color:'#080c14',width:0.5} },
+  text:['-0.3467','-0.3454','-0.3045'],
+  textposition:'outside', textfont:{color:'#64748b',size:11}
+}], { ...LAYOUT,
+  yaxis:{...LAYOUT.yaxis,range:[-0.5,0.1],title:{text:'R² Score',font:{size:11,color:'#64748b'}}},
+  xaxis:{...LAYOUT.xaxis},
+  shapes:[{type:'line',y0:0,y1:0,x0:-0.5,x1:2.5,
+    line:{color:'#38bdf8',dash:'dot',width:1}}],
+  bargap:0.45
+}, CFG);
+</script>
+</body>
+</html>

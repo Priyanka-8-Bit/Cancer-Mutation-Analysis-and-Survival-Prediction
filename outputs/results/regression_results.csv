@@ -1,0 +1,4 @@
+Model,MAE,RMSE,R2
+Linear Regression,490.7,645.4,-0.3467
+Ridge Regression,490.5,645.1,-0.3454
+Lasso Regression,483.6,635.3,-0.3045
